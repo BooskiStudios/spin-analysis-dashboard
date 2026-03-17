@@ -10,6 +10,7 @@ import { HistoryPanel } from './components/HistoryPanel'
 import { EditGameModal } from './components/EditGameModal'
 import { ImageGalleryCard } from './components/ImageGalleryCard'
 import { createGame, fetchGames, fetchSessions, isStaticDemo, updateGame } from './lib/api'
+import { ensureDemoBreakdownsSeeded } from './lib/demoBreakdownSeed'
 import { appendHistory } from './lib/history'
 import {
   clearDraft,
@@ -53,6 +54,10 @@ function App() {
 
   useEffect(() => {
     let isCancelled = false
+
+    if (isStaticDemo) {
+      ensureDemoBreakdownsSeeded()
+    }
 
     const loadGames = async () => {
       try {
