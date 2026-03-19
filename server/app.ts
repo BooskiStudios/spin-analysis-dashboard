@@ -10,21 +10,31 @@ import { seedDatabase } from './seed/seed.js'
 
 // Origins that are allowed to call the API.
 // Set ALLOWED_ORIGINS as a comma-separated list in your environment, e.g.:
-//   ALLOWED_ORIGINS=https://BearyGoodGames.github.io
+//   ALLOWED_ORIGINS=https://bearygoodgames.github.io
 // Defaults to allowing all origins if not set (useful during local dev).
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim().toLowerCase())
   : null
 
 function corsMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
   const origin = req.headers.origin
-  if (!ALLOWED_ORIGINS) {
-    // Dev mode — allow everything
+
+  // Log every request origin so you can see exactly what the browser is sending
+  console.log(`[CORS] ${req.method} ${req.path} — origin: ${origin ?? '(none)'}`)
+
+  if (!ALLOWED_ORIGINS || !origin) {
+    // No restriction set, or no origin header — allow all
     res.setHeader('Access-Control-Allow-Origin', '*')
-  } else if (origin && ALLOWED_ORIGINS.includes(origin)) {
+  } else if (ALLOWED_ORIGINS.includes(origin.toLowerCase())) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Vary', 'Origin')
+  } else {
+    console.warn(`[CORS] Blocked origin: ${origin}. Allowed: ${ALLOWED_ORIGINS.join(', ')}`)
+    // Still set headers so the browser gets a proper rejection rather than a network error
     res.setHeader('Access-Control-Allow-Origin', origin)
     res.setHeader('Vary', 'Origin')
   }
+
   res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   if (req.method === 'OPTIONS') {
