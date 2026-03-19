@@ -10,7 +10,7 @@ import { seedDatabase } from './seed/seed.js'
 
 // Origins that are allowed to call the API.
 // Set ALLOWED_ORIGINS as a comma-separated list in your environment, e.g.:
-//   ALLOWED_ORIGINS=https://BGGltd.github.io
+//   ALLOWED_ORIGINS=https://BearyGoodGames.github.io
 // Defaults to allowing all origins if not set (useful during local dev).
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
