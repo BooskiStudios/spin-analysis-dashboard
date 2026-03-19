@@ -36,7 +36,7 @@ export function Sidebar({ games, selectedGameId, isCreatingGame, isDemoMode = fa
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(185,255,156,0.18),_transparent_38%),radial-gradient(circle_at_bottom_right,_rgba(116,226,216,0.14),_transparent_42%),linear-gradient(180deg,_rgba(255,255,255,0.03),_transparent)]" />
       <div className="relative flex h-full flex-col px-4 py-6 md:px-5">
         <div className="mb-6 border-b border-white/10 pb-5">
-          <p className="text-xs uppercase tracking-[0.4em] text-lime">tombola</p>
+          <p className="text-xs uppercase tracking-[0.4em] text-lime">BGG</p>
           <h1 className="mt-3 font-display text-3xl leading-tight text-mist">Competitor Dashboard</h1>
           <p className="mt-3 text-sm text-mist/80">Drill into different competitor games to understand their mechanics & features.</p>
         </div>

@@ -10,6 +10,7 @@
     "build": "npm run build:server && npm run build:client",
     "build:client": "vite build",
     "build:pages": "vite build --mode github-pages",
+    "build:home": "vite build --mode home",
     "build:server": "tsc -p tsconfig.server.json",
     "preview": "vite preview",
     "start:server": "node dist-server/server.js"
