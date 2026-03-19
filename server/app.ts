@@ -44,6 +44,9 @@ export async function createApp() {
   app.use(express.json())
   app.use('/storage', express.static(path.resolve(process.cwd(), 'storage')))
 
+  // Handle CORS preflight for all routes
+  app.options('*', corsMiddleware)
+
   app.get('/health', (_request, response) => {
     response.json({ status: 'ok' })
   })
