@@ -55,8 +55,15 @@ export async function createApp() {
   app.use(express.json())
   app.use('/storage', express.static(path.resolve(process.cwd(), 'storage')))
 
-  // Handle CORS preflight for all routes
-  app.options('*', corsMiddleware)
+  // Must be registered before routers — Express 5 sub-routers intercept OPTIONS
+  // before app.options() can run, so we catch it here in the middleware chain.
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(204)
+      return
+    }
+    next()
+  })
 
   app.get('/health', (_request, response) => {
     response.json({ status: 'ok' })
