@@ -37,6 +37,7 @@ function corsMiddleware(req: express.Request, res: express.Response, next: expre
 
   res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  res.setHeader('Cache-Control', 'no-store')
   if (req.method === 'OPTIONS') {
     res.sendStatus(204)
     return
