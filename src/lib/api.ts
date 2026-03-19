@@ -1,5 +1,6 @@
 import type { Game, Session, Spin, SpinEvent } from '../types'
 import { demoGames, getDemoSessions, getDemoSpinDetail, getDemoSpins } from '../data/demoData'
+import { resolveApiUrl } from './apiClient'
 
 const defaultReplayUrl = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'
 export const isStaticDemo = import.meta.env.VITE_STATIC_DEMO === 'true'
@@ -72,7 +73,7 @@ function normalizeBoolean(value: boolean | number) {
 }
 
 async function requestJson<T>(input: string) {
-  const response = await fetch(input)
+  const response = await fetch(resolveApiUrl(input))
 
   if (!response.ok) {
     throw new Error(`Request failed: ${response.status}`)
@@ -82,7 +83,7 @@ async function requestJson<T>(input: string) {
 }
 
 async function requestJsonWithBody<T>(input: string, method: string, body: unknown) {
-  const response = await fetch(input, {
+  const response = await fetch(resolveApiUrl(input), {
     method,
     headers: {
       'Content-Type': 'application/json',
@@ -98,7 +99,7 @@ async function requestJsonWithBody<T>(input: string, method: string, body: unkno
 }
 
 async function requestFormData<T>(input: string, body: FormData) {
-  const response = await fetch(input, {
+  const response = await fetch(resolveApiUrl(input), {
     method: 'POST',
     body,
   })
