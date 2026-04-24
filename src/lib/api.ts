@@ -1,6 +1,7 @@
 import type { Game, Session, Spin, SpinEvent } from '../types'
 import { demoGames, getDemoSessions, getDemoSpinDetail, getDemoSpins } from '../data/demoData'
 import { resolveApiUrl } from './apiClient'
+import { getAuthToken } from './user'
 
 const defaultReplayUrl = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'
 export const isStaticDemo = import.meta.env.VITE_STATIC_DEMO === 'true'
@@ -72,8 +73,15 @@ function normalizeBoolean(value: boolean | number) {
   return typeof value === 'boolean' ? value : Boolean(value)
 }
 
+function getAuthHeaders() {
+  const token = getAuthToken()
+  return token ? { 'Authorization': `Bearer ${token}` } : {}
+}
+
 async function requestJson<T>(input: string) {
-  const response = await fetch(resolveApiUrl(input))
+  const response = await fetch(resolveApiUrl(input), {
+    headers: getAuthHeaders(),
+  })
 
   if (!response.ok) {
     throw new Error(`Request failed: ${response.status}`)
@@ -87,6 +95,7 @@ async function requestJsonWithBody<T>(input: string, method: string, body: unkno
     method,
     headers: {
       'Content-Type': 'application/json',
+      ...getAuthHeaders(),
     },
     body: JSON.stringify(body),
   })
@@ -101,6 +110,7 @@ async function requestJsonWithBody<T>(input: string, method: string, body: unkno
 async function requestFormData<T>(input: string, body: FormData) {
   const response = await fetch(resolveApiUrl(input), {
     method: 'POST',
+    headers: getAuthHeaders(),
     body,
   })
 

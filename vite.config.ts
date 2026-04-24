@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/health': 'http://localhost:4000',
+        '/auth': 'http://localhost:4000',
         '/games': 'http://localhost:4000',
         '/upload-session-video': 'http://localhost:4000',
         '/sessions': 'http://localhost:4000',

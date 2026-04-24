@@ -2,6 +2,8 @@ import express from 'express'
 import path from 'node:path'
 import { getDatabase } from './lib/database.js'
 import { RequestValidationError } from './lib/validation.js'
+import { authMiddleware } from './lib/auth.js'
+import { authRouter } from './routes/auth.js'
 import { gamesRouter } from './routes/games.js'
 import { sessionsRouter } from './routes/sessions.js'
 import { spinsRouter } from './routes/spins.js'
@@ -69,10 +71,14 @@ export async function createApp() {
     response.json({ status: 'ok' })
   })
 
-  app.use('/games', gamesRouter)
-  app.use('/sessions', sessionsRouter)
-  app.use('/spins', spinsRouter)
-  app.use(uploadsRouter)
+  // Auth routes (no auth required)
+  app.use('/auth', authRouter)
+
+  // Protected routes (auth required)
+  app.use('/games', authMiddleware, gamesRouter)
+  app.use('/sessions', authMiddleware, sessionsRouter)
+  app.use('/spins', authMiddleware, spinsRouter)
+  app.use(authMiddleware, uploadsRouter)
 
   app.use((error: Error, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
     if (error instanceof RequestValidationError) {

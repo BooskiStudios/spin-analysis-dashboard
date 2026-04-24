@@ -4,7 +4,7 @@ import { BaseGameBreakdownCard } from './components/BaseGameBreakdownCard'
 import { BonusRoundsBreakdownCard } from './components/BonusRoundsBreakdownCard'
 import { GameNotesCard } from './components/GameNotesCard'
 import type { UploadWorkflowStatus } from './components/UploadSessionCard'
-import { EmailGate } from './components/EmailGate'
+import { LoginModal } from './components/LoginModal'
 import { EditModeToggle } from './components/EditModeToggle'
 import { HistoryPanel } from './components/HistoryPanel'
 import { EditGameModal } from './components/EditGameModal'
@@ -22,7 +22,7 @@ import {
   subscribeDrafts,
   updateDraft,
 } from './lib/editDraftStore'
-import { getUserEmail } from './lib/user'
+import { getAuthToken, getUsername } from './lib/user'
 import type { Game } from './types'
 
 type UploadActivity = {
@@ -38,7 +38,7 @@ function App() {
   const [isCreatingGame, setIsCreatingGame] = useState(false)
   const [uploadActivity, setUploadActivity] = useState<UploadActivity | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [userEmail, setUserEmail] = useState<string | null>(() => (typeof window === 'undefined' ? null : getUserEmail()))
+  const [username, setUsername] = useState<string | null>(() => (typeof window === 'undefined' ? null : getUsername()))
   const [isEditMode, setIsEditMode] = useState(false)
   const [isEditingGame, setIsEditingGame] = useState(false)
   const [isUpdatingGame, setIsUpdatingGame] = useState(false)
@@ -54,6 +54,14 @@ function App() {
 
   useEffect(() => {
     let isCancelled = false
+
+    // Only load games if user is authenticated
+    const authToken = getAuthToken()
+    if (!authToken) {
+      setGames([])
+      setIsLoading(false)
+      return
+    }
 
     if (isStaticDemo) {
       ensureDemoBreakdownsSeeded()
@@ -87,7 +95,7 @@ function App() {
     return () => {
       isCancelled = true
     }
-  }, [])
+  }, [username])
 
   async function reloadGames(preferredGameId?: number | null) {
     const gameList = await fetchGames()
@@ -169,10 +177,10 @@ function App() {
 
       const createdGame = await createGame(values.provider, values.name, values.gameType, values.assignedRtp)
 
-      if (isEditMode && userEmail) {
+      if (isEditMode && username) {
         appendHistory(`game:${createdGame.id}`, {
           action: 'Created game',
-          userEmail,
+          userEmail: username,
           meta: { provider: createdGame.provider, name: createdGame.name },
         })
       }
@@ -215,10 +223,10 @@ function App() {
 
       setGames((current) => current.map((game) => (game.id === updated.id ? updated : game)))
 
-      if (isEditMode && userEmail) {
+      if (isEditMode && username) {
         appendHistory(pageKey, {
           action: 'Updated game details',
-          userEmail,
+          userEmail: username,
           meta: {
             from: {
               provider: selectedGame.provider,
@@ -245,10 +253,10 @@ function App() {
 
   return (
     <div className="min-h-screen bg-mist text-ink">
-      <EmailGate
-        isOpen={!userEmail}
-        onSignedIn={(email) => {
-          setUserEmail(email)
+      <LoginModal
+        isOpen={!username}
+        onLoggedIn={(newUsername) => {
+          setUsername(newUsername)
         }}
       />
 
@@ -270,11 +278,22 @@ function App() {
         <div className="mx-auto max-w-[1800px] px-4 py-4 sm:px-6 lg:px-8">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="rounded-[1.6rem] border border-spruce/15 bg-night px-4 py-3 text-sm text-mist shadow-panel">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-lime">Signed in</p>
-              <p className="mt-1 text-mist/85">{userEmail ?? '--'}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-lime">Signed in as</p>
+              <p className="mt-1 text-mist/85">{username ?? '--'}</p>
             </div>
 
             <div className="flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  await reloadGames(selectedGameId ?? undefined)
+                }}
+                className="inline-flex items-center rounded-full border border-spruce/18 bg-white/70 px-4 py-2 text-sm font-semibold text-ink shadow-sm transition hover:bg-white"
+                title="Refresh games list to see changes from other users"
+              >
+                ↻ Refresh
+              </button>
+
               {isEditMode ? (
                 <>
                   <button
@@ -284,11 +303,11 @@ function App() {
                         return
                       }
 
-                      commitDraft(selectedGameId, userEmail)
+                      commitDraft(selectedGameId, username ?? '')
                       setIsEditMode(false)
 
-                      if (userEmail) {
-                        appendHistory(pageKey, { action: 'Saved changes', userEmail })
+                      if (username) {
+                        appendHistory(pageKey, { action: 'Saved changes', userEmail: username })
                       }
                     }}
                     disabled={!selectedGameId || !isDraftDirty}
@@ -306,8 +325,8 @@ function App() {
                       resetDraft(selectedGameId)
                       setIsEditMode(false)
 
-                      if (userEmail) {
-                        appendHistory(pageKey, { action: 'Cancelled changes', userEmail })
+                      if (username) {
+                        appendHistory(pageKey, { action: 'Cancelled changes', userEmail: username })
                       }
                     }}
                     className="rounded-full border border-spruce/18 bg-white/70 px-4 py-2 text-sm font-semibold text-ink shadow-sm transition hover:bg-white"
@@ -331,10 +350,10 @@ function App() {
                       clearDraft(selectedGameId)
                     }
 
-                    if (userEmail) {
+                    if (username) {
                       appendHistory(pageKey, {
                         action: next ? 'Enabled edit mode' : 'Disabled edit mode',
-                        userEmail,
+                        userEmail: username,
                       })
                     }
                     return next
@@ -428,7 +447,7 @@ function App() {
             <div className="space-y-6">
               <BaseGameBreakdownCard
                 gameId={selectedGameId}
-                userEmail={userEmail}
+                userEmail={username}
                 isEditMode={isEditMode}
                 value={isEditMode ? draft?.base : null}
                 onChange={(next) => {
@@ -439,7 +458,7 @@ function App() {
 
               <BonusRoundsBreakdownCard
                 gameId={selectedGameId}
-                userEmail={userEmail}
+                userEmail={username}
                 isEditMode={isEditMode}
                 value={isEditMode ? draft?.bonus : null}
                 onChange={(next) => {
@@ -451,7 +470,7 @@ function App() {
 
             <GameNotesCard
               pageKey={pageKey}
-              userEmail={userEmail}
+              userEmail={username}
               isEditMode={isEditMode}
               title="Notes"
               value={draft?.notes}
@@ -466,7 +485,7 @@ function App() {
             <div className="mt-6">
               <ImageGalleryCard
                 pageKey={pageKey}
-                userEmail={userEmail}
+                userEmail={username}
                 isEditMode={isEditMode}
                 value={draft?.gallery}
                 onChange={(next) => {
