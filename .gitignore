@@ -1,5 +1,7 @@
 node_modules
+dist
 .DS_Store
+dist-server
 storage/*.sqlite
 storage/*.sqlite-shm
 storage/*.sqlite-wal
