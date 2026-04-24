@@ -9,9 +9,13 @@ import { EditModeToggle } from './components/EditModeToggle'
 import { HistoryPanel } from './components/HistoryPanel'
 import { EditGameModal } from './components/EditGameModal'
 import { ImageGalleryCard } from './components/ImageGalleryCard'
-import { createGame, fetchGames, fetchSessions, isStaticDemo, updateGame } from './lib/api'
+import { createGame, deleteGame, fetchGames, fetchSessions, isStaticDemo, updateGame } from './lib/api'
+import { removeBaseGameBreakdown } from './lib/baseGameBreakdown'
+import { removeBonusRoundsBreakdown } from './lib/bonusRoundsBreakdown'
 import { ensureDemoBreakdownsSeeded } from './lib/demoBreakdownSeed'
-import { appendHistory } from './lib/history'
+import { removeGallery } from './lib/gallery'
+import { removeGameNotes } from './lib/gameNotes'
+import { appendHistory, removeHistory } from './lib/history'
 import {
   clearDraft,
   commitDraft,
@@ -42,6 +46,7 @@ function App() {
   const [isEditMode, setIsEditMode] = useState(false)
   const [isEditingGame, setIsEditingGame] = useState(false)
   const [isUpdatingGame, setIsUpdatingGame] = useState(false)
+  const [isDeletingGame, setIsDeletingGame] = useState(false)
 
   const selectedGame = games.find((game) => game.id === selectedGameId)
   const uploadGame = games.find((game) => game.id === uploadActivity?.gameId)
@@ -248,6 +253,40 @@ function App() {
       throw error
     } finally {
       setIsUpdatingGame(false)
+    }
+  }
+
+  async function handleDeleteSelectedGame() {
+    if (!selectedGameId || !selectedGame) {
+      return
+    }
+
+    const deletedGameId = selectedGameId
+    const deletedPageKey = `game:${deletedGameId}`
+    const remainingGames = games.filter((game) => game.id !== deletedGameId)
+
+    try {
+      setIsDeletingGame(true)
+      setErrorMessage(null)
+
+      await deleteGame(deletedGameId)
+
+      clearDraft(deletedGameId)
+      removeBaseGameBreakdown(deletedGameId)
+      removeBonusRoundsBreakdown(deletedGameId)
+      removeGameNotes(deletedPageKey)
+      removeHistory(deletedPageKey)
+      await removeGallery(deletedPageKey)
+
+      setGames(remainingGames)
+      setSelectedGameId(remainingGames[0]?.id ?? null)
+      setIsEditingGame(false)
+      setIsEditMode(false)
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to delete game')
+      throw error
+    } finally {
+      setIsDeletingGame(false)
     }
   }
 
@@ -505,6 +544,7 @@ function App() {
       <EditGameModal
         isOpen={isEditingGame && Boolean(selectedGame) && isEditMode}
         isSubmitting={isUpdatingGame}
+        isDeleting={isDeletingGame}
         initialValues={{
           provider: selectedGame?.provider ?? '',
           name: selectedGame?.name ?? '',
@@ -516,6 +556,7 @@ function App() {
           await handleUpdateSelectedGame(values)
           setIsEditingGame(false)
         }}
+        onDelete={handleDeleteSelectedGame}
       />
     </div>
   )

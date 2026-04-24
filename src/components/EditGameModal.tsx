@@ -4,12 +4,14 @@ import { createPortal } from 'react-dom'
 type EditGameModalProps = {
   isOpen: boolean
   isSubmitting: boolean
+  isDeleting: boolean
   initialValues: { provider: string; name: string; gameType: string; assignedRtp: number | null }
   onClose: () => void
   onSubmit: (values: { provider: string; name: string; gameType: string; assignedRtp: number | null }) => Promise<void>
+  onDelete: () => Promise<void>
 }
 
-export function EditGameModal({ isOpen, isSubmitting, initialValues, onClose, onSubmit }: EditGameModalProps) {
+export function EditGameModal({ isOpen, isSubmitting, isDeleting, initialValues, onClose, onSubmit, onDelete }: EditGameModalProps) {
   const providerId = useId()
   const nameId = useId()
   const gameTypeId = useId()
@@ -18,6 +20,8 @@ export function EditGameModal({ isOpen, isSubmitting, initialValues, onClose, on
   const [name, setName] = useState(initialValues.name)
   const [gameType, setGameType] = useState(initialValues.gameType)
   const [assignedRtp, setAssignedRtp] = useState<string>(initialValues.assignedRtp != null ? String(initialValues.assignedRtp) : '')
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
+  const isBusy = isSubmitting || isDeleting
 
   useEffect(() => {
     if (!isOpen) {
@@ -28,6 +32,7 @@ export function EditGameModal({ isOpen, isSubmitting, initialValues, onClose, on
     setName(initialValues.name)
     setGameType(initialValues.gameType)
     setAssignedRtp(initialValues.assignedRtp != null ? String(initialValues.assignedRtp) : '')
+    setIsDeleteConfirmOpen(false)
   }, [
     isOpen,
     initialValues.provider,
@@ -42,14 +47,21 @@ export function EditGameModal({ isOpen, isSubmitting, initialValues, onClose, on
     }
 
     function handleEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape' && !isSubmitting) {
-        onClose()
+      if (event.key !== 'Escape' || isBusy) {
+        return
       }
+
+      if (isDeleteConfirmOpen) {
+        setIsDeleteConfirmOpen(false)
+        return
+      }
+
+      onClose()
     }
 
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
-  }, [isOpen, isSubmitting, onClose])
+  }, [isBusy, isDeleteConfirmOpen, isOpen, onClose])
 
   if (!isOpen) {
     return null
@@ -75,8 +87,13 @@ export function EditGameModal({ isOpen, isSubmitting, initialValues, onClose, on
     gameType.trim() !== initialValues.gameType ||
     normalizedAssignedRtpValue !== initialValues.assignedRtp
 
+  async function handleDelete() {
+    await onDelete()
+    setIsDeleteConfirmOpen(false)
+  }
+
   return createPortal(
-    <div className="fixed inset-0 z-[130] flex items-center justify-center bg-night/55 px-4 backdrop-blur-sm" onClick={isSubmitting ? undefined : onClose}>
+    <div className="fixed inset-0 z-[130] flex items-center justify-center bg-night/55 px-4 backdrop-blur-sm" onClick={isBusy ? undefined : onClose}>
       <div
         className="w-full max-w-md rounded-[2rem] border border-spruce/15 bg-[linear-gradient(160deg,rgba(253,253,253,0.98),rgba(185,255,156,0.18))] p-6 shadow-panel"
         onClick={(event) => event.stopPropagation()}
@@ -90,7 +107,7 @@ export function EditGameModal({ isOpen, isSubmitting, initialValues, onClose, on
           <button
             type="button"
             onClick={onClose}
-            disabled={isSubmitting}
+            disabled={isBusy}
             className="rounded-full border border-spruce/15 bg-white/70 px-3 py-1 text-sm text-ink transition hover:bg-white"
           >
             Close
@@ -107,7 +124,7 @@ export function EditGameModal({ isOpen, isSubmitting, initialValues, onClose, on
               type="text"
               value={provider}
               onChange={(event) => setProvider(event.target.value)}
-              disabled={isSubmitting}
+              disabled={isBusy}
               className="mt-2 w-full rounded-[1rem] border border-spruce/15 bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-spruce/40"
             />
           </div>
@@ -121,7 +138,7 @@ export function EditGameModal({ isOpen, isSubmitting, initialValues, onClose, on
               type="text"
               value={name}
               onChange={(event) => setName(event.target.value)}
-              disabled={isSubmitting}
+              disabled={isBusy}
               className="mt-2 w-full rounded-[1rem] border border-spruce/15 bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-spruce/40"
             />
           </div>
@@ -134,7 +151,7 @@ export function EditGameModal({ isOpen, isSubmitting, initialValues, onClose, on
               id={gameTypeId}
               value={gameType}
               onChange={(event) => setGameType(event.target.value)}
-              disabled={isSubmitting}
+              disabled={isBusy}
               className="mt-2 w-full rounded-[1rem] border border-spruce/15 bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-spruce/40"
             >
               <option value="Slot">Slot</option>
@@ -159,30 +176,75 @@ export function EditGameModal({ isOpen, isSubmitting, initialValues, onClose, on
               value={assignedRtp}
               onChange={(event) => setAssignedRtp(event.target.value)}
               placeholder="e.g. 96.2"
-              disabled={isSubmitting}
+              disabled={isBusy}
               className="mt-2 w-full rounded-[1rem] border border-spruce/15 bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-spruce/40"
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-2">
+          <div className="flex items-center justify-between gap-3 pt-2">
             <button
               type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="rounded-full border border-spruce/15 bg-white px-4 py-2 text-sm font-medium text-ink transition hover:border-spruce/35"
+              onClick={() => setIsDeleteConfirmOpen(true)}
+              disabled={isBusy}
+              className="rounded-full border border-[#d9485f]/28 bg-[#fff1f3] px-4 py-2 text-sm font-semibold text-[#9f1239] transition hover:bg-[#ffe4e8] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Cancel
+              Delete game
             </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || !provider.trim() || !name.trim() || !gameType.trim() || !isDirty}
-              className="rounded-full bg-night px-5 py-2 text-sm font-semibold text-mist transition hover:bg-spruce disabled:cursor-not-allowed disabled:bg-night/45 disabled:text-mist/55"
-            >
-              {isSubmitting ? 'Saving...' : 'Save changes'}
-            </button>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isBusy}
+                className="rounded-full border border-spruce/15 bg-white px-4 py-2 text-sm font-medium text-ink transition hover:border-spruce/35"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isBusy || !provider.trim() || !name.trim() || !gameType.trim() || !isDirty}
+                className="rounded-full bg-night px-5 py-2 text-sm font-semibold text-mist transition hover:bg-spruce disabled:cursor-not-allowed disabled:bg-night/45 disabled:text-mist/55"
+              >
+                {isSubmitting ? 'Saving...' : 'Save changes'}
+              </button>
+            </div>
           </div>
         </form>
       </div>
+
+      {isDeleteConfirmOpen ? (
+        <div className="fixed inset-0 z-[131] flex items-center justify-center bg-night/55 px-4 backdrop-blur-sm" onClick={isDeleting ? undefined : () => setIsDeleteConfirmOpen(false)}>
+          <div
+            className="w-full max-w-sm rounded-[1.75rem] border border-[#d9485f]/22 bg-white p-6 shadow-panel"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p className="text-xs uppercase tracking-[0.32em] text-[#b4233f]">Delete game</p>
+            <h4 className="mt-2 font-display text-2xl text-ink">Remove {initialValues.name || 'this game'}?</h4>
+            <p className="mt-3 text-sm leading-6 text-ink/72">
+              This will permanently remove the game and its related sessions from the database. Your local notes and history for this game will be cleared too.
+            </p>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                disabled={isDeleting}
+                className="rounded-full border border-spruce/15 bg-white px-4 py-2 text-sm font-medium text-ink transition hover:border-spruce/35"
+              >
+                Keep game
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleDelete()}
+                disabled={isDeleting}
+                className="rounded-full bg-[#9f1239] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#881337] disabled:cursor-not-allowed disabled:bg-[#9f1239]/55"
+              >
+                {isDeleting ? 'Deleting...' : 'Yes, delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>,
     document.body,
   )

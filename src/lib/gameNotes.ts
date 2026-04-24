@@ -25,6 +25,10 @@ export function saveGameNotes(pageKey: string, notes: GameNoteEntry[]) {
   window.localStorage.setItem(notesStorageKey(pageKey), JSON.stringify(notes))
 }
 
+export function removeGameNotes(pageKey: string) {
+  window.localStorage.removeItem(notesStorageKey(pageKey))
+}
+
 export function appendGameNote(notes: GameNoteEntry[], note: Omit<GameNoteEntry, 'id' | 'createdAt'>): GameNoteEntry[] {
   const record: GameNoteEntry = {
     id: globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : String(Date.now()),

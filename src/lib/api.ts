@@ -107,6 +107,19 @@ async function requestJsonWithBody<T>(input: string, method: string, body: unkno
   return (await response.json()) as T
 }
 
+async function requestJsonWithoutBody<T>(input: string, method: string) {
+  const response = await fetch(resolveApiUrl(input), {
+    method,
+    headers: getAuthHeaders(),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`)
+  }
+
+  return (await response.json()) as T
+}
+
 async function requestFormData<T>(input: string, body: FormData) {
   const response = await fetch(resolveApiUrl(input), {
     method: 'POST',
@@ -183,6 +196,14 @@ export async function updateGame(
     assignedRtp: game.assigned_rtp ?? null,
     totalSessions: game.total_sessions,
   }
+}
+
+export async function deleteGame(gameId: number): Promise<void> {
+  if (isStaticDemo) {
+    throw new Error('Delete game is disabled in the static demo build')
+  }
+
+  await requestJsonWithoutBody<{ id: number }>(`/games/${gameId}`, 'DELETE')
 }
 
 export async function fetchSessions(gameId: number): Promise<Session[]> {

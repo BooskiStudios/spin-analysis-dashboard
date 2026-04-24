@@ -78,6 +78,10 @@ export function saveBaseGameBreakdown(gameId: number, breakdown: BaseGameBreakdo
   window.localStorage.setItem(storageKey(gameId), JSON.stringify(breakdown))
 }
 
+export function removeBaseGameBreakdown(gameId: number) {
+  window.localStorage.removeItem(storageKey(gameId))
+}
+
 export async function saveBaseGameBreakdownToServer(gameId: number, breakdown: BaseGameBreakdown, userEmail?: string | null) {
   await requestJsonWithBody<ApiBaseGameBreakdownResponse>(`/games/${gameId}/base-breakdown`, 'PUT', {
     breakdown,

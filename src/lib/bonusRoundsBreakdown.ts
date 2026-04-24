@@ -89,6 +89,10 @@ export function saveBonusRoundsBreakdown(gameId: number, breakdown: BonusRoundsB
   window.localStorage.setItem(storageKey(gameId), JSON.stringify(breakdown))
 }
 
+export function removeBonusRoundsBreakdown(gameId: number) {
+  window.localStorage.removeItem(storageKey(gameId))
+}
+
 export async function loadBonusRoundsBreakdownFromServer(gameId: number): Promise<BonusRoundsBreakdown> {
   const response = await requestJson<ApiBonusRoundsBreakdownResponse>(`/games/${gameId}/bonus-breakdown`)
   return {

@@ -39,3 +39,8 @@ export function appendHistory<T = unknown>(pageKey: string, entry: Omit<HistoryE
 
   return record
 }
+
+export function removeHistory(pageKey: string) {
+  window.localStorage.removeItem(historyStorageKey(pageKey))
+  window.dispatchEvent(new CustomEvent('spin-examiner:history-changed', { detail: { pageKey } }))
+}

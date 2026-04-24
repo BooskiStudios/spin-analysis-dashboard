@@ -76,6 +76,25 @@ gamesRouter.put('/:gameId', async (request, response) => {
   return response.json(updatedGame)
 })
 
+gamesRouter.delete('/:gameId', async (request, response) => {
+  const gameId = parseIdParam(request.params.gameId, 'gameId')
+
+  const database = await getDatabase()
+  const existingGame = await database.get('SELECT id, name, provider FROM games WHERE id = ?', [gameId])
+
+  if (!existingGame) {
+    return response.status(404).json({ error: 'Game not found' })
+  }
+
+  await database.run('DELETE FROM games WHERE id = ?', [gameId])
+
+  return response.json({
+    id: gameId,
+    name: existingGame.name,
+    provider: existingGame.provider,
+  })
+})
+
 gamesRouter.get('/:gameId/base-breakdown', async (request, response) => {
   const gameId = parseIdParam(request.params.gameId, 'gameId')
   const database = await getDatabase()

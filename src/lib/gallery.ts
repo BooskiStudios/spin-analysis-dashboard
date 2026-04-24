@@ -56,6 +56,17 @@ async function idbPut(record: GalleryRecord): Promise<void> {
   })
 }
 
+async function idbDelete(pageKey: string): Promise<void> {
+  const db = await openDb()
+  return await new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite')
+    const store = tx.objectStore(storeName)
+    const req = store.delete(pageKey)
+    req.onsuccess = () => resolve()
+    req.onerror = () => reject(req.error ?? new Error('Failed to delete gallery'))
+  })
+}
+
 export function loadGallery(pageKey: string): GalleryItem[] {
   // Backwards-compatible synchronous fallback (may be empty if we have migrated to IndexedDB).
   const raw = window.localStorage.getItem(galleryStorageKey(pageKey))
@@ -92,6 +103,16 @@ export async function saveGallery(pageKey: string, items: GalleryItem[]) {
     // Fallback (may still fail with quota if images are large)
     window.localStorage.setItem(galleryStorageKey(pageKey), JSON.stringify(items))
   }
+}
+
+export async function removeGallery(pageKey: string) {
+  try {
+    await idbDelete(pageKey)
+  } catch {
+    // Ignore and still clear the localStorage fallback.
+  }
+
+  window.localStorage.removeItem(galleryStorageKey(pageKey))
 }
 
 export async function fileToDataUrl(file: File) {
